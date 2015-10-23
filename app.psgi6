@@ -1,0 +1,8 @@
+use v6;
+
+use lib 'lib';
+use Isucon5::Web;
+
+my Str $root_dir = IO::Path.new($?FILE).dirname;
+
+my $app = Isucon5::Web.psgi($root_dir);
