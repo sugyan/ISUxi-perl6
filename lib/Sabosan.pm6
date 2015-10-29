@@ -1,28 +1,27 @@
 use v6;
 
-use Router::Boost;
-my $router = Router::Boost.new;
-
 class Sabosan {
 
     use Crust::Response;
     use Sabosan::Connection;
     use Sabosan::Exception;
+    use Router::Boost;
 
-    has Str $.root_dir;
+    has $.router = Router::Boost.new;
+    # has Str $.root_dir;
 
-    method new(Str $root_dir) {
-        self.bless(root_dir => $root_dir);
+    method new {
+        self.bless;
     }
 
-    method build_app() {
+    method build-app() {
         sub (%env) {
             my $c = Sabosan::Connection.new(
                 req => %env,
             );
             my $path_info = %env<PATH_INFO>;
             {
-                my %match = $router.match($path_info);
+                my %match = $.router.match($path_info);
                 if !%match {
                     $c.halt(404);
                 }
@@ -50,9 +49,13 @@ class Sabosan {
 }
 
 sub EXPORT {
+    my $sabosan = Sabosan.new;
     {
         '&get' => sub (Pair $p) {
-            $router.add($p.key, $p.value);
+            $sabosan.router.add($p.key, $p.value);
         },
+        '&app' => sub {
+            $sabosan.build-app;
+        }
     }
 }

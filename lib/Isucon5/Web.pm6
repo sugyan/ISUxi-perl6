@@ -5,7 +5,7 @@ unit class Isucon5::Web;
 use Sabosan;
 
 method psgi(Str $root_dir) {
-    Sabosan.new($root_dir).build_app
+    app;
 }
 
 get '/' => sub ($c) {
