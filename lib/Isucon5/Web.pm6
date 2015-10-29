@@ -4,10 +4,12 @@ unit class Isucon5::Web;
 
 use Sabosan;
 
-method psgi(Str $root_dir) {
-    app;
+method psgi(Str $root-dir) {
+    my $app = app;
+    $app.template.set-path($root-dir ~ '/views');
+    $app.build-app;
 }
 
 get '/' => sub ($c) {
-    say 'index';
+    $c.render('index.tt');
 };
