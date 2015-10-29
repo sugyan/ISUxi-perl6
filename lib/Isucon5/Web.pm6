@@ -6,10 +6,14 @@ use Sabosan;
 
 method psgi(Str $root-dir) {
     my $app = app;
-    $app.template.set-path($root-dir ~ '/views');
+    $app.template.add-path($root-dir ~ '/views');
     $app.build-app;
 }
 
-get '/' => sub ($c) {
-    $c.render('index.tt');
+get '/login' => sub ($c) {
+    $c.render('login', :message('高負荷に耐えられるSNSコミュニティサイトへようこそ!'));
+};
+
+get '/' => <set_global authenticated> => sub ($c) {
+    $c.render('index');
 };
