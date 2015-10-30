@@ -14,12 +14,56 @@ submethod BUILD(:$!state, :$!store) {
 }
 
 method CALL-ME(%env) {
-    self.get-session(%env);
-    $.app()(%env);
+    my ($id, $session) = self.get-session(%env);
+    if $id.defined && $session.defined {
+        # TODO
+    } else {
+        $id = self.generate-id(%env);
+        %env<p6sgix.session> = {};
+    }
+    %env<p6sgix.session.options> = { id => $id };
+
+    my @res = $.app()(%env);
+    # sub (@res) {
+    self.finalize(%env, @res);
+    # }(@res);
+    dd @res;
+    return @res;
 }
 
 method get-session(%env) {
     ...
+}
+
+method generate-id(%env) {
+    ...
+}
+
+method commit(%env) {
+    my %session = %env<p6sgix.session>;
+    my %options = %env<p6sgix.session.options>;
+    if %options<expire> {
+        # TODO
+    } elsif %options<change_id> {
+        # TODO
+    } else {
+        $.store.store(%options<id>, %session);
+    }
+}
+
+method save-state($id, @res, %env) {
+    ...
+}
+
+method finalize(%env, @res) {
+    my %session = %env<p6sgix.session>;
+    my %options = %env<p6sgix.session.options>;
+    self.commit(%env) unless %options<no_store>;
+    if %options<expire> {
+        # TODO
+    } else {
+        self.save-state(%options<id>, @res, %env);
+    }
 }
 
 method !inflate-backend(Str $prefix, $backend) {
