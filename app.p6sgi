@@ -3,6 +3,16 @@ use v6;
 use lib 'lib';
 use Isucon5::Web;
 
+use Crust::Builder;
+
 my Str $root_dir = IO::Path.new($?FILE).dirname;
 
 my $app = Isucon5::Web.psgi($root_dir);
+
+builder {
+    enable 'Static',
+        path => rx{ ^ \/ [ [css||fonts||js] \/ || favicon\.ico$ ] },
+        root => $root_dir ~ '/static',
+        encoding => 'utf-8';
+    $app;
+};

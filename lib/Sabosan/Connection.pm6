@@ -7,6 +7,7 @@ use Sabosan::Response;
 
 has $.tt;
 has $.req;
+has %.stash;
 
 method halt(int $code, Str $message?) {
     die Sabosan::Exception.new(
@@ -20,6 +21,14 @@ method render(Str $template, *%named) {
     return Sabosan::Response.new(
         status => 200,
         headers => [ 'Content-Type' => 'text/html; charset=UTF-8', 'X-Frame-Options' => 'DENY' ],
-        body => $body,
+        body => [$body],
+    );
+}
+
+method redirect(Str $url) {
+    return Sabosan::Response.new(
+        status => 302,
+        headers => [ 'Location' => $url ],
+        body => [],
     );
 }
