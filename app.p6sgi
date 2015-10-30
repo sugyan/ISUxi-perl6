@@ -14,5 +14,8 @@ builder {
         path => rx{ ^ \/ [ [css||fonts||js] \/ || favicon\.ico$ ] },
         root => $root_dir ~ '/static',
         encoding => 'utf-8';
+    enable 'Session::Cookie',
+        session-key => "isuxi_session",
+        secret => %*ENV<ISUCON5_SESSION_SECRET> // 'beermoris';
     $app;
 };
