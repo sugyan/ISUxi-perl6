@@ -2,6 +2,8 @@ use v6;
 
 use Crust::Middleware::Session;
 use Crust::Session::State::Cookie;
+use Digest::HMAC;
+use Digest::SHA;
 use MIME::Base64;
 
 unit class Crust::Middleware::Session::Cookie is Crust::Middleware::Session;
@@ -21,6 +23,7 @@ method get-session(%env) {
 
 method save-state($id, @res, %env) {
     my $cookie = self!serialize($id, %env<p6sgix.session>);
+    self.state.finalize($cookie, @res, %env<p6sgix.session.options>);
 }
 
 method generate-id(%env) {
@@ -34,5 +37,5 @@ method !serialize($id, %session) {
 
 method !sig($b64) {
     return '.' unless $.secret;
-    # TODO Digest::HMAC_SHA1::hmac_sha1_hex($b64, $self->secret);
+    hmac-hex($b64, $.secret, &sha1);
 }
