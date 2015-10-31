@@ -14,9 +14,9 @@ submethod BUILD(:$!state, :$!store) {
 }
 
 method CALL-ME(%env) {
-    my ($id, $session) = self.get-session(%env);
-    if $id.defined && $session.defined {
-        # TODO
+    my ($id, %session) = self.get-session(%env);
+    if $id.defined && %session.defined {
+        %env<p6sgix.session> = %session;
     } else {
         $id = self.generate-id(%env);
         %env<p6sgix.session> = {};
@@ -24,10 +24,7 @@ method CALL-ME(%env) {
     %env<p6sgix.session.options> = { id => $id };
 
     my @res = $.app()(%env);
-    # sub (@res) {
     self.finalize(%env, @res);
-    # }(@res);
-    dd @res;
     return @res;
 }
 

@@ -1,5 +1,6 @@
 use v6;
 
+use Cookie::Baker;
 use Crust::Session::State;
 use Crust::Request;
 
@@ -34,5 +35,6 @@ method !merge-options(%options) {
 }
 
 method !set-cookie($id, @res, %options) {
-    # TODO add cookie to @res[1]
+    my $cookie = bake-cookie($.session-key, $id, |%options);
+    @res[1].push: 'Set-Cookie' => $cookie;
 }

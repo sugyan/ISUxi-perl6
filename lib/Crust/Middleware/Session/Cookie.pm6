@@ -17,8 +17,11 @@ submethod BUILD(:$!session-key, :$!secret) {
 
 method get-session(%env) {
     my $cookie = $.state.get-session-id(%env) or return;
+    my ($time, $b64, $sig) = $cookie.split(/\:/, 3);
+    self!sig($b64) eq $sig or return;
 
-    # TODO
+    my %session = MIME::Base64.decode($b64).decode('utf8').EVAL;
+    return self.generate-id(%env), %session;
 }
 
 method save-state($id, @res, %env) {
