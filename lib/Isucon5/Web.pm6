@@ -47,34 +47,42 @@ WHERE u.email = ? AND u.passhash = SHA2(CONCAT(?, s.salt), 512)
 SQL
     $sth.execute($email, $password);
     my $result = $sth.fetchrow-hash;
+    $sth.finish;
     if !$result {
         abort-authentication-error;
     }
-    # TODO: set to session
-    say $result;
+    session<user-id> = $result<id>;
     return $result;
 }
 
 sub current-user {
-    my $user_id = session<user_id>;
-    return unless $user_id;
+    my $user-id = session<user-id>;
+    return unless $user-id;
 
-    # TODO: get from session
+    my $sth = db.prepare('SELECT id, account_name, nick_name, email FROM users WHERE id = ?');
+    $sth.execute($user-id);
+    my $user = $sth.fetchrow-hash;
+    $sth.finish;
+    if !$user {
+        session<user-id> = Nil;
+        abort-authentication-error;
+    }
+    return $user;
 }
 
 filter 'authenticated' => sub ($app) {
     sub ($c) {
-        if ! current-user() {
+        if !current-user() {
             return $c.redirect('/login');
         }
         $app($c);
     }
 }
 
-filter 'set_global' => sub ($app) {
+filter 'set-global' => sub ($app) {
     sub ($c) {
         $C = $c;
-        # TODO: session settings
+        $C.stash<session> = $c.req.env<p6sgix.session>;
         $app($c);
     };
 }
@@ -83,12 +91,17 @@ get '/login' => sub ($c) {
     $c.render('login', :message('高負荷に耐えられるSNSコミュニティサイトへようこそ!'));
 };
 
-post '/login' => <set_global> => sub ($c) {
+post '/login' => <set-global> => sub ($c) {
     my ($email, $password) = $c.req.parameters<email password>;
     authenticate($email, $password);
     $c.redirect('/');
 };
 
-get '/' => <set_global authenticated> => sub ($c) {
+get '/logout' => <set-global> => sub ($c) {
+    session<user-id> = Nil;
+    $c.redirect('/login');
+};
+
+get '/' => <set-global authenticated> => sub ($c) {
     $c.render('index');
 };
