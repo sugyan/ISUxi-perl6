@@ -38,6 +38,11 @@ sub abort-authentication-error {
     $C.halt(401, $body);
 }
 
+sub abort-content-not-found {
+    my $body = $C.tt.process('error', :message('要求されたコンテンツは存在しません'));
+    $C.halt(404, $body);
+}
+
 sub authenticate(Str $email, Str $password) {
     my $sth = db.prepare(q:to/SQL/);
 SELECT u.id AS id, u.account_name AS account_name, u.nick_name AS nick_name, u.email AS email
@@ -68,6 +73,48 @@ sub current-user {
         abort-authentication-error;
     }
     return %user;
+}
+
+sub user-from-account($account_name) {
+    my $sth = db.prepare('SELECT * FROM users WHERE account_name = ?');
+    $sth.execute($account_name);
+    my %user = $sth.fetchrow-hash;
+    $sth.finish;
+    abort-content-not-found if !%user;
+    return %user;
+}
+
+sub is-friend($another_id) {
+    my $user_id = session<user-id>;
+    my $query = 'SELECT COUNT(1) AS cnt FROM relations WHERE (one = ? AND another = ?) OR (one = ? AND another = ?)';
+    my $cnt = do {
+        my $sth = db.prepare($query);
+        $sth.execute($user_id, $another_id, $another_id, $user_id);
+        my %result = $sth.fetchrow-hash;
+        $sth.finish;
+        %result<cnt>;
+    };
+    return $cnt > 0 ?? 1 !! 0;
+}
+
+sub mark-footprint($user-id) {
+    # TODO
+}
+
+sub permitted($another_id) {
+    $another_id == current-user<id> || is-friend($another_id);
+}
+
+my $PREFS;
+sub prefectures {
+    $PREFS ||= do {
+        [
+        '未入力',
+        '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県', '茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県', '新潟県', '富山県',
+        '石川県', '福井県', '山梨県', '長野県', '岐阜県', '静岡県', '愛知県', '三重県', '滋賀県', '京都府', '大阪府', '兵庫県', '奈良県', '和歌山県', '鳥取県', '島根県',
+        '岡山県', '広島県', '山口県', '徳島県', '香川県', '愛媛県', '高知県', '福岡県', '佐賀県', '長崎県', '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'
+        ]
+    };
 }
 
 filter 'authenticated' => sub ($app) {
@@ -130,3 +177,23 @@ get '/' => <set-global authenticated> => sub ($c) {
     );
     $c.render('index', |%locals);
 };
+
+get '/profile/:account_name' => <set-global authenticated> => sub ($c) {
+    my $account_name = $c.args<account_name>;
+    my %owner = user-from-account($account_name);
+    # TODO
+    my %prof = ();
+    my $entries = ();
+    mark-footprint(%owner<id>);
+
+    my %locals = (
+        owner => %owner,
+        profile => %prof,
+        entries => $entries,
+        private => permitted(%owner<id>),
+        is_friend => is-friend(%owner<id>),
+        current_user => current-user,
+        prefectures => prefectures,
+    );
+    $c.render('profile', |%locals);
+}

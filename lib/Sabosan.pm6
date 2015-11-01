@@ -56,6 +56,7 @@ class Sabosan {
             }
             my $code = %match<stuff><__action__>;
             my @filters = %match<stuff><__filter__>.flat;
+            $c.args = %match<captured>;
             my $app = sub ($c) {
                 my $res = $code($c);
                 given $res {

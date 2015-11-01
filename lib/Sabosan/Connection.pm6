@@ -8,6 +8,7 @@ use Sabosan::Response;
 has $.tt;
 has $.req;
 has %.stash;
+has %.args;
 
 method halt(int $code, Str $message?) {
     die Sabosan::Exception.new(
