@@ -46,13 +46,13 @@ JOIN salts s ON u.id = s.user_id
 WHERE u.email = ? AND u.passhash = SHA2(CONCAT(?, s.salt), 512)
 SQL
     $sth.execute($email, $password);
-    my $result = $sth.fetchrow-hash;
+    my %result = $sth.fetchrow-hash;
     $sth.finish;
-    if !$result {
+    if !%result {
         abort-authentication-error;
     }
-    session<user-id> = $result<id>;
-    return $result;
+    session<user-id> = %result<id>;
+    return %result;
 }
 
 sub current-user {
@@ -61,13 +61,13 @@ sub current-user {
 
     my $sth = db.prepare('SELECT id, account_name, nick_name, email FROM users WHERE id = ?');
     $sth.execute($user-id);
-    my $user = $sth.fetchrow-hash;
+    my %user = $sth.fetchrow-hash;
     $sth.finish;
-    if !$user {
+    if !%user {
         session<user-id> = Nil;
         abort-authentication-error;
     }
-    return $user;
+    return %user;
 }
 
 filter 'authenticated' => sub ($app) {
@@ -98,10 +98,35 @@ post '/login' => <set-global> => sub ($c) {
 };
 
 get '/logout' => <set-global> => sub ($c) {
-    session<user-id> = Nil;
+    session<user-id>:delete;
     $c.redirect('/login');
 };
 
 get '/' => <set-global authenticated> => sub ($c) {
-    $c.render('index');
+    my %profile = do {
+        my $sth = db.prepare('SELECT * FROM profiles WHERE user_id = ?');
+        $sth.execute(current-user<id>);
+        my %profile = $sth.fetchrow-hash;
+        $sth.finish;
+        %profile;
+    };
+    # TODO
+    my $entries = ();
+    my $comments_for_me = ();
+    my $entries_of_friends = ();
+    my $comments_of_friends = ();
+    my $friends = ();
+    my $footprints = ();
+
+    my %locals = (
+        user => current-user,
+        profile => %profile,
+        entries => $entries,
+        comments_for_me => $comments_for_me,
+        entries_of_friends => $entries_of_friends,
+        comments_of_friends => $comments_of_friends,
+        friends => $friends,
+        footprints => $footprints,
+    );
+    $c.render('index', |%locals);
 };

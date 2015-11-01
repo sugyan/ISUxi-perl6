@@ -13,8 +13,7 @@ has $.secure;
 has $.httponly;
 
 method get-session-id(%env) {
-    Crust::Request.new(%env).cookies;
-    %env<crust.cookie.parsed>{$.session-key};
+    Crust::Request.new(%env).cookies{$.session-key};
 }
 
 method finalize($id, @res, %options) {
